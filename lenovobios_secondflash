@@ -18,94 +18,55 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-## Don't add here. errors are expected.
-# set -u -e -v
-set -v
+set -u -e
 
-if [ $(uname -i) = "i686" ] || [ $(uname -m) = "i686" ]
-	then
-		echo "Running on i686. ok."
-		sleep 5
-elif [ $(uname -i) = "x86_64" ] || [ $(uname -m) = "x86_64" ]
-	then
-		echo "Running on x86_64. ok."
-		sleep 5
+# These are the tested platforms
+if [ $(uname -i) = "i686" ] || [ $(uname -m) = "i686" ]; then
+	echo "Running on i686. ok."
+	arch=i686
+	sleep 5
+elif [ $(uname -i) = "x86_64" ] || [ $(uname -m) = "x86_64" ]; then
+	echo "Running on x86_64. ok."
+	arch=x86_64
+	sleep 5
 else
 	echo "This script must be run on an i686 or x86_64 host. x86_64 is recommended."
 	exit 1
 fi
-
-if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root" 
-   exit 1
+if [ -f "DEBLOB" ]; then
+	# In a src archive or git
+	arch=.
 fi
 
-# USE ROOT OR SUDO WHEN EXECUTING THIS
-
-# for T60 or X60 owners with Lenovo BIOS
-# does the 1st part of the flash before shut down
+if [[ $EUID -ne 0 ]]; then
+	echo "This script must be run as root"
+	exit 1
+fi
 
 if (( $# != 1 )); then
-	echo "Usage: ./lenovobios_firstflash yourrom.rom"
-	echo "usage: ./lenovobios_firstflash path/to/yourrom.rom"
+	echo "usage: $0 path/to/yourrom.rom"
 	echo "You need to specify exactly 1 file"
 	exit 1
 fi
-if [ ! -f $1 ]; then
+if [ ! -f "$1" ]; then
 	echo "File not found!"
 	exit 1
 fi
 
+errOut="
+	WARNING: bucts not found, but if the image was flashed then it's probably safe
+	A dd'd image (like libreboot's images) flashed with bucts=1 is ok.
+	If the image is not dd'd and bucts=1, then you should either
+		- run ./bucts/$arch/bucts 0 now, or
+		- remove the yellow cmos/nvram battery for a minute.
+"
+
+set -v
+# for T60 or X60 owners with Lenovo BIOS
+# does the 1st part of the flash before shut down
+
 # Flash it a 2nd time, to write upper 64K block
-if [ -f "DEBLOB" ]; then
-	# Means we are in src archive or git
-	./flashrom/flashrom -p internal -w $1
-elif [ $(uname -i) = "i686" ] || [ $(uname -m) = "i686" ]
-	then
-		# Means we are in bin archive and on an i686 host
-		./flashrom/i686/flashrom -p internal -w $1
-elif [ $(uname -i) = "x86_64" ] || [ $(uname -m) = "x86_64" ]
-	then
-		# Means we are in bin archive and on an x86_64 host
-		./flashrom/x86_64/flashrom -p internal -w $1
-fi
+./flashrom/$arch/flashrom -p internal -w "$1"
 
 # Reset bucts back to zero
-$errOut = " \
-			WARNING: bucts not found, but if the image was flashed then it's probably safe \
-			A dd'd image (like libreboot's images) flashed with bucts=1 is ok. If the image is not dd'd and bucts=1, \
-			then you should run ./bucts 0 now, or remove the yellow cmos/nvram battery for a minute. \
-			"
-if [ ! -f "DEBLOB" ]
-	then
-		# this means we are working in bin
-		if [ $(uname -i) = "i686" ] || [ $(uname -m) = "i686" ]
-			then
-				# i686
-				# needed for first flashing, otherwise machine will be bricked
-				{ # try
-					./bucts/i686/bucts 0
-				} || { # catch
-					echo "$errOut"
-					exit 1
-				}
-		else
-			# x86_64
-			# needed for first flashing, otherwise machine will be bricked
-			{ # try
-				./bucts/x86_64/bucts 0
-			} || { # catch
-				echo "$errOut"
-				exit 1
-			}
-else
-	# this means we are working in src
-	# needed for first flashing, otherwise machine will be bricked
-	{ # try
-		./bucts/bucts 0
-	} || { # catch
-		echo "$errOut"
-		exit 1
-	}
-fi
-
+./bucts/$arch/bucts 1 || { printf '%s' "$errOut"; exit 1; }
