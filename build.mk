@@ -1,7 +1,3 @@
-# % = $(board)
-resources/libreboot/config/%_vesafb_config: resources/libreboot/config/%_txtmode_config
-	sed 's/# CONFIG_FRAMEBUFFER_KEEP_VESA_MODE is not set/CONFIG_FRAMEBUFFER_KEEP_VESA_MODE=y/' < $< > $@
-
 define rule_grub_cfg
 tmp/grub_$(keymap)_$(romtype).cfg: \
     resources/grub/config/extra/common.cfg     resources/grub/config/menuentries/common.cfg \

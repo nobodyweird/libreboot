@@ -1,3 +1,7 @@
+# % = $(board)
+resources/libreboot/config/%_vesafb_config: resources/libreboot/config/%_txtmode_config
+	sed 's/# CONFIG_FRAMEBUFFER_KEEP_VESA_MODE is not set/CONFIG_FRAMEBUFFER_KEEP_VESA_MODE=y/' < $< > $@
+
 define rule_rom_nokeyboard
 tmp/$(board)_nokeyboard_$(romtype).rom: builddeps-coreboot \
     tmp/grub_$(romtype).elf \
