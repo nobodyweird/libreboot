@@ -12,7 +12,7 @@ romtypes = txtmode vesafb
 
 i945boards = x60 x60t t60
 
-build: \
+build: PHONY \
     $(foreach board,$(boards),\
               $(foreach keymap,$(keymaps),\
                         $(foreach romtype,$(romtypes),\
@@ -53,3 +53,9 @@ include modules.mk
 include build.mk
 include grub-mkstandalone.mk
 include buildrom-withgrub.mk
+
+
+
+.DELETE_ON_ERROR:
+PHONY:
+.PHONY: PHONY

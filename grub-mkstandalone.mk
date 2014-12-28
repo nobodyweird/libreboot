@@ -9,7 +9,7 @@ grub_vesafb_memdisk_deps   =                 resources/grub/background/backgroun
 # A rule-variable is used here to avoid needing .SECONDEXPANSION
 define rule_grub_elf
 tmp/grub_$(romtype).elf: \
-    builddeps-grub \
+    tmp/builddeps-grub.stamp \
     $(keymapdir)/list.mk resources/utilities/grub-assemble/modules.conf \
     resources/grub/config/grub_memdisk.cfg \
     $(grub_$(romtype)_memdisk_deps) \
