@@ -16,6 +16,7 @@ tmp/$(board)_nokeyboard_$(romtype).rom: builddeps-coreboot \
 endef
 $(eval $(call loop_rule,rom_nokeyboard,board romtype))
 
+# Unfortunately, any $$ in the rule must become $$$$
 define rule_rom
 bin/$(board)_$(keymap)_$(romtype).rom: \
     tmp/$(board)_nokeyboard_$(romtype).rom \
@@ -28,8 +29,8 @@ bin/$(board)_$(keymap)_$(romtype).rom: \
 	$(if $(filter $(board),$(i945boards)),\
 		# Needed on i945 systems for the bucts/dd trick (documented)
 		# This enables the ROM to be flashed over the lenovo bios firmware
-		dd if='$@.tmp' of='$@.tmp.top64k' bs=1 skip=$$[$$(stat -c %s '$@.tmp') - 0x10000] count=64k && \
-		dd if='$@.tmp.top64k' of='$@.tmp' bs=1 seek=$$[$$(stat -c %s '$@.tmp') - 0x20000] count=64k conv=notrunc && \
+		dd if='$@.tmp' of='$@.tmp.top64k' bs=1 skip=$$$$[$$$$(stat -c %s '$@.tmp') - 0x10000] count=64k && \
+		dd if='$@.tmp.top64k' of='$@.tmp' bs=1 seek=$$$$[$$$$(stat -c %s '$@.tmp') - 0x20000] count=64k conv=notrunc && \
 		rm -f '$@.tmp.top64k')
 	mv $@.tmp $@
 endef
