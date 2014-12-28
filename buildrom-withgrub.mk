@@ -1,7 +1,8 @@
 define rule_rom_nokeyboard
-tmp/$(board)_nokeyboard_$(romtype).rom: \
+tmp/$(board)_nokeyboard_$(romtype).rom: builddeps-coreboot \
     tmp/grub_$(romtype).elf \
     resources/libreboot/config/$(board)_$(romtype)_config
+	rm -f src/coreboot/.config src/coreboot/grub.elf
 	$(MAKE) -C src/coreboot clean
 	ln resources/libreboot/config/$(board)_$(romtype)_config src/coreboot/.config
 	ln tmp/grub_$(romtype).elf src/coreboot/grub.elf

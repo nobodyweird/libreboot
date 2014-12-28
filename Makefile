@@ -37,19 +37,19 @@ $(eval _loop = $(_loop_str))
 $(_loop)
 endef
 
-include modules.mk
-include build.mk
-include grub-mkstandalone.mk
-include buildrom-withgrub.mk
-
 
 
 $(keymapdir)/list.mk: $(keymapdir)/original/
 	echo keymaps = $$(ls $<) > $@
 
-resources/grub/font/dejavusansmono.pf2: src/dejavu/ttv/DejaVuSansMono.ttf $(GRUB_MKFONT)
+resources/grub/font/dejavusansmono.pf2: src/dejavu/ttv/DejaVuSansMono.ttf $(firstword $(GRUB_MKFONT))
 	$(GRUB_MKFONT) -o $@ $<
 
 # % = $(keymap)
-$(keymapdir)/keymap/%.gkb: $(keymapdir)/orignal/% builddeps-grub
+$(keymapdir)/%.gkb: $(keymapdir)/original/% $(firstword $(GRUB_MKLAYOUT))
 	$(GRUB_MKLAYOUT) -o $@ < $<
+
+include modules.mk
+include build.mk
+include grub-mkstandalone.mk
+include buildrom-withgrub.mk
