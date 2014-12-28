@@ -20,6 +20,7 @@ define rule_rom
 bin/$(board)_$(keymap)_$(romtype).rom: \
     tmp/$(board)_nokeyboard_$(romtype).rom \
     tmp/grub_$(keymap)_$(romtype).cfg \
+    tmp/grub_$(keymap)_$(romtype)_test.cfg \
     $(firstword $(CBFSTOOL))
 	cp $< $@.tmp
 	$(CBFSTOOL) $@.tmp add -f tmp/grub_$(keymap)_$(romtype).cfg -n grub.cfg -t raw
