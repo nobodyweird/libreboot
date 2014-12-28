@@ -35,10 +35,7 @@ update-rc.d powertop remove
 rm  -rf /etc/init.d/powertop
 
 # write the correct commands there:
-cp powertop.trisquel7.init /etc/init.d/powertop
-
-# make it executable:
-chmod +x /etc/init.d/powertop
+install -Dm755 powertop.trisquel7.init /etc/init.d/powertop
 
 # Add the service to make it run automatically at boot time:
 update-rc.d powertop defaults
@@ -46,4 +43,3 @@ update-rc.d powertop defaults
 # Run powertop now and tell the user
 powertop --auto-tune
 echo "Done. Run 'powertop --auto-tune' now. This will also run automatically at boot time. Run it again at any time, if needed. This has also been done for you just now."
-
