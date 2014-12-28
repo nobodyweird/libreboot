@@ -42,7 +42,7 @@ endef
 $(keymapdir)/list.mk: $(keymapdir)/original/
 	echo keymaps = $$(ls $<) > $@
 
-resources/grub/font/dejavusansmono.pf2: src/dejavu/ttv/DejaVuSansMono.ttf $(firstword $(GRUB_MKFONT))
+resources/grub/font/dejavusansmono.pf2: src/dejavu/ttf/DejaVuSansMono.ttf $(firstword $(GRUB_MKFONT))
 	$(GRUB_MKFONT) -o $@ $<
 
 # % = $(keymap)
