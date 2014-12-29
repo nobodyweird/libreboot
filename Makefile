@@ -13,12 +13,12 @@ romtypes = txtmode vesafb
 
 i945boards = x60 x60t t60
 
-build: PHONY \
-    $(foreach board,$(boards),\
-              $(foreach keymap,$(keymaps),\
-                        $(foreach romtype,$(romtypes),\
-                                  bin/$(board)_$(keymap)_$(romtype).rom)))
+roms = $(foreach board,$(boards),\
+                 $(foreach keymap,$(keymaps),\
+                           $(foreach romtype,$(romtypes),\
+                                     $(board)_$(keymap)_$(romtype))))
 
+build: PHONY $(foreach rom,$(roms),bin/$(rom).rom bin/$(rom)_with_seabios.rom)
 
 define _nl
 
@@ -54,6 +54,7 @@ include modules.mk
 include build.mk
 include grub-mkstandalone.mk
 include buildrom-withgrub.mk
+include addseabios.mk
 
 
 

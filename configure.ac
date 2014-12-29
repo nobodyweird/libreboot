@@ -48,6 +48,11 @@ if test "x$HAVE_PYTHON" = x ; then
   AC_MSG_ERROR([Please install the 'python' utility])
 fi
 
+AC_CHECK_PROG(HAVE_IASL,iasl,yes)
+if test "x$HAVE_IASL" = x ; then
+  AC_MSG_ERROR([Please install the 'iasl' utility, it is needed for SeaBIOS])
+fi
+
 dnl This check is from grub's configure.ac
 AC_MSG_CHECKING([for unifont])
 FONT_SOURCE=
