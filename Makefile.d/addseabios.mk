@@ -1,11 +1,11 @@
-bin/%_with_seabios.rom: bin/%.rom \
-    src/seabios/out/vgabios.bin \
-    src/seabios/out/bios.bin.elf \
+roms/%_with_seabios.rom: roms/%.rom \
+    src/$(host_arch)/seabios/out/vgabios.bin \
+    src/$(host_arch)/seabios/out/bios.bin.elf \
     resources/grub/config/seabios.cfg \
     $(CBFSTOOL)
 	cp $< $@.tmp
-	$(CBFSTOOL) $@.tmp add -f src/seabios/out/vgabios.bin -n vgaroms/vgabios.bin -t raw
-	$(CBFSTOOL) $@.tmp add -f src/seabios/out/bios.bin.elf -n bios.bin.elf -t raw
+	$(CBFSTOOL) $@.tmp add -f src/$(host_arch)/seabios/out/vgabios.bin -n vgaroms/vgabios.bin -t raw
+	$(CBFSTOOL) $@.tmp add -f src/$(host_arch)/seabios/out/bios.bin.elf -n bios.bin.elf -t raw
 	$(CBFSTOOL) $@.tmp extract -n grub.cfg -f $@.tmp.grub.cfg
 	$(CBFSTOOL) $@.tmp extract -n grubtest.cfg -f $@.tmp.grubtest.cfg
 	$(CBFSTOOL) $@.tmp remove -n grub.cfg

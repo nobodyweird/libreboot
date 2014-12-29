@@ -1,0 +1,498 @@
+#!/bin/bash
+# Makefile.d/downloader: A downloader script that handles all kinds of
+#                        funny VCS URLs.
+# Very heavily based on Pacman's 'makepkg' script.
+
+# Usage: Makefile.d/downloader ARCH DEPNAME::URL [DEPNAME::URL...]
+
+#   Copyright (c) 2014 Luke Shumaker <lukeshu@sbcglobal.net>
+#   Copyright (c) 2006-2013 Pacman Development Team <pacman-dev@archlinux.org>
+#   Copyright (c) 2002-2006 by Judd Vinet <jvinet@zeroflux.org>
+#   Copyright (c) 2005 by Aurelien Foret <orelien@chez.com>
+#   Copyright (c) 2006 by Miklos Vajna <vmiklos@frugalware.org>
+#   Copyright (c) 2005 by Christian Hamar <krics@linuxforum.hu>
+#   Copyright (c) 2006 by Alex Smith <alex@alex-smith.me.uk>
+#   Copyright (c) 2006 by Andras Voroskoi <voroskoi@frugalware.org>
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+export TEXTDOMAIN='pacman-scripts'
+export TEXTDOMAINDIR='/usr/share/locale'
+
+shopt -s extglob
+set -u -e -E
+
+# check if messages are to be printed using color
+declare ALL_OFF= BOLD= BLUE= GREEN= RED= YELLOW=
+if [[ -t 2 ]]; then
+	# prefer terminal safe colored and bold text when tput is supported
+	if tput setaf 0 &>/dev/null; then
+		ALL_OFF="$(tput sgr0)"
+		BOLD="$(tput bold)"
+		BLUE="${BOLD}$(tput setaf 4)"
+		GREEN="${BOLD}$(tput setaf 2)"
+		RED="${BOLD}$(tput setaf 1)"
+		YELLOW="${BOLD}$(tput setaf 3)"
+	else
+		ALL_OFF="\e[1;0m"
+		BOLD="\e[1;1m"
+		BLUE="${BOLD}\e[1;34m"
+		GREEN="${BOLD}\e[1;32m"
+		RED="${BOLD}\e[1;31m"
+		YELLOW="${BOLD}\e[1;33m"
+	fi
+fi
+readonly ALL_OFF BOLD BLUE GREEN RED YELLOW
+
+### SUBROUTINES ###
+
+plain() {
+	local mesg=$1; shift
+	printf "${BOLD}    ${mesg}${ALL_OFF}\n" "$@" >&2
+}
+
+msg() {
+	local mesg=$1; shift
+	printf "${GREEN}==>${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@" >&2
+}
+
+msg2() {
+	local mesg=$1; shift
+	printf "${BLUE}  ->${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@" >&2
+}
+
+warning() {
+	local mesg=$1; shift
+	printf "${YELLOW}==> $(gettext "WARNING:")${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@" >&2
+}
+
+error() {
+	local mesg=$1; shift
+	printf "${RED}==> $(gettext "ERROR:")${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@" >&2
+}
+
+dir_is_empty() {
+	(
+		shopt -s dotglob nullglob
+		files=("$1"/*)
+		(( ${#files} == 0 ))
+	)
+}
+
+# a "netfile" has the form:
+#    "depname::url"
+get_url()     { printf -- "%s\n" "${1#*::}"; }
+get_depname() {	printf -- "%s\n" "${1%%::*}"; }
+
+get_protocol() {
+	local url="$(get_url "$1")"
+	local proto="${url%%://*}"
+	proto=${proto%%+*}
+	printf -- "%s\n" "$proto"
+}
+
+get_urlname() {
+	local netfile=$1
+	local url="$(get_url "$netfile")"
+	local proto=$(get_protocol "$netfile")
+	urlname=${netfile%%#*} # Strip a fragment
+	urlname=${urlname%/}   # Strip a trailing slash
+	urlname=${urlname##*/} # Strip leading components
+	urlname=${urlname%.$proto} # Strip .git
+	printf -- "%s\n" "${urlname}"
+}
+
+get_downloadname() {
+	local netfile=$1
+	local depname="$(get_depname "$netfile")"
+	local urlname="$(get_urlname "$netfile")"
+	local proto="$(get_protocol "$netfile")"
+
+	local name
+	case $proto in
+		git|hg|svn) name="$depname.$proto";;
+		http|https) name="$urlname";;
+		*)          return 1;;
+	esac
+
+	printf -- "%s\n" "$name"
+}
+
+####
+
+get_downloadclient() {
+	local proto=$1
+
+	# loop through DOWNLOAD_AGENTS variable looking for protocol
+	local i
+	for i in "${DLAGENTS[@]}"; do
+		local handler="${i%%::*}"
+		if [[ $proto = "$handler" ]]; then
+			local agent="${i##*::}"
+			break
+		fi
+	done
+
+	# if we didn't find an agent, return an error
+	if [[ -z $agent ]]; then
+		error "$(gettext "Unknown download protocol: %s")" "$proto"
+		plain "$(gettext "Aborting...")"
+		exit 1 # $E_CONFIG_ERROR
+	fi
+
+	# ensure specified program is installed
+	local program="${agent%% *}"
+	if [[ ! -x $program ]]; then
+		local baseprog="${program##*/}"
+		error "$(gettext "The download program %s is not installed.")" "$baseprog"
+		plain "$(gettext "Aborting...")"
+		exit 1 # $E_MISSING_PROGRAM
+	fi
+
+	printf "%s\n" "$agent"
+}
+
+download_file() {
+	local netfile=$1
+	local filename="$(get_downloadname "$netfile")"
+
+	pushd "$SRCDEST" &>/dev/null
+
+	if [[ -f "$filename" ]]; then
+		msg2 "$(gettext "Found %s")" "${filename}"
+		return
+	fi
+
+	local proto=$(get_protocol "$netfile")
+
+	# find the client we should use for this URL
+	local dlcmd
+	dlcmd=$(get_downloadclient "$proto") || exit $?
+
+	local url=$(get_url "$netfile")
+
+	msg2 "$(gettext "Downloading %s...")" "$filename"
+
+	# temporary download file, default to last component of the URL
+	local dlfile=$filename
+
+	# replace %o by the temporary dlfile if it exists
+	if [[ $dlcmd = *%o* ]]; then
+		dlcmd=${dlcmd//\%o/\"$filename.part\"}
+		dlfile="$filename.part"
+	fi
+	# add the URL, either in place of %u or at the end
+	if [[ $dlcmd = *%u* ]]; then
+		dlcmd=${dlcmd//\%u/\"$url\"}
+	else
+		dlcmd="$dlcmd \"$url\""
+	fi
+
+	local ret=0
+	eval "$dlcmd || ret=\$?"
+	if (( ret )); then
+		[[ ! -s $dlfile ]] && rm -f -- "$dlfile"
+		error "$(gettext "Failure while downloading %s")" "$filename"
+		plain "$(gettext "Aborting...")"
+		exit 1
+	fi
+
+	# rename the temporary download file to the final destination
+	if [[ $dlfile != "$filename" ]]; then
+		mv -f "$dlfile" "$filename"
+	fi
+}
+
+extract_file() {
+	local netfile=$1
+	local depname="$(get_depname "$netfile")"
+	local filename="$(get_downloadname "$netfile")"
+	local filepath="$SRCDEST/$filename"
+	local filetype=$(file -bizL "$filepath") # fix Arch flyspray #6246
+	local ext=${filename##*.}
+	local cmd=bsdtar
+
+	local ret=0
+	msg2 "$(gettext "Extracting %s with %s")" "$filename" "$cmd"
+	rm -rf "$srcdir/$depname"
+	mkdir "$srcdir/$depname" && $cmd -xf "$filepath" -C "$srcdir/$depname" --strip-components 1 || ret=$?
+	if (( ret )); then
+		error "$(gettext "Failed to extract %s")" "$file"
+		plain "$(gettext "Aborting...")"
+		exit 1
+	fi
+}
+
+download_git() {
+	local netfile=$1
+
+	local repo="$(get_downloadname "$netfile")"
+	local dir="$SRCDEST/$repo"
+
+	local url="$(get_url "$netfile")"
+	url=${url##git+}
+	url=${url%%#*}
+
+	if [[ ! -d "$dir" ]] || dir_is_empty "$dir" ; then
+		msg2 "$(gettext "Cloning %s %s repo...")" "${repo}" "git"
+		if ! git clone --mirror "$url" "$dir"; then
+			error "$(gettext "Failure while downloading %s %s repo")" "${repo}" "git"
+			plain "$(gettext "Aborting...")"
+			exit 1
+		fi
+	elif (( ! HOLDVER )); then
+		pushd "$dir" &>/dev/null
+		# Make sure we are fetching the right repo
+		if [[ "$url" != "$(git config --get remote.origin.url)"  ]] ; then
+			error "$(gettext "%s is not a clone of %s")" "$dir" "$url"
+			plain "$(gettext "Aborting...")"
+			exit 1
+		fi
+		msg2 "$(gettext "Updating %s %s repo...")" "${repo}" "git"
+		if ! git fetch --all -p; then
+			# only warn on failure to allow offline builds
+			warning "$(gettext "Failure while updating %s %s repo")" "${repo}" "git"
+		fi
+		popd &>/dev/null
+	fi
+}
+
+extract_git() {
+	local netfile=$1
+
+	local url="$(get_url "$netfile")"
+	local fragment=
+	if [[ $url = *#* ]]; then
+		fragment=${url#*#}
+	fi
+
+	local repo="$(get_downloadname "$netfile")"
+	local src="$SRCDEST/$repo"
+	local dst="$srcdir/$(get_depname "$netfile")"
+
+	msg2 "$(gettext "Creating working copy of %s %s repo...")" "${repo}" "git"
+	rm -rf "${dst}"
+
+	if ! git clone "$src" "$dst"; then
+		error "$(gettext "Failure while creating working copy of %s %s repo")" "${repo}" "git"
+		plain "$(gettext "Aborting...")"
+		exit 1
+	fi
+
+	local ref=
+	if [[ -n $fragment ]]; then
+		case ${fragment%%=*} in
+			commit|tag)
+				ref=${fragment##*=}
+				;;
+			branch)
+				ref=origin/${fragment##*=}
+				;;
+			*)
+				error "$(gettext "Unrecognized reference: %s")" "${fragment}"
+				plain "$(gettext "Aborting...")"
+				exit 1
+		esac
+	fi
+
+	if [[ -n $ref ]]; then
+		pushd "${dst}" &>/dev/null
+		if ! git checkout -b makepkg $ref; then
+			error "$(gettext "Failure while creating working copy of %s %s repo")" "${repo}" "git"
+			plain "$(gettext "Aborting...")"
+			exit 1
+		fi
+		popd &>/dev/null
+	fi
+}
+
+download_hg() {
+	local netfile=$1
+
+	local repo=$(get_downloadname "$netfile")
+	local dir="$SRCDEST/$repo"
+
+	local url=$(get_url "$netfile")
+	url=${url##hg+}
+	url=${url%%#*}
+
+	if [[ ! -d "$dir" ]] || dir_is_empty "$dir" ; then
+		msg2 "$(gettext "Cloning %s %s repo...")" "${repo}" "hg"
+		if ! hg clone -U "$url" "$dir"; then
+			error "$(gettext "Failure while downloading %s %s repo")" "${repo}" "hg"
+			plain "$(gettext "Aborting...")"
+			exit 1
+		fi
+	elif (( ! HOLDVER )); then
+		msg2 "$(gettext "Updating %s %s repo...")" "${repo}" "hg"
+		pushd "$dir" &>/dev/null
+		if ! hg pull; then
+			# only warn on failure to allow offline builds
+			warning "$(gettext "Failure while updating %s %s repo")" "${repo}" "hg"
+		fi
+		popd &>/dev/null
+	fi
+}
+
+extract_hg() {
+	local netfile=$1
+
+	local url="$(get_url "$netfile")"
+	local fragment=
+	if [[ $url = *#* ]]; then
+		fragment=${url#*#}
+	fi
+
+	local repo="$(get_downloadname "$netfile")"
+	local src="$SRCDEST/$repo"
+	local dst="$srcdir/$(get_depname "$netfile")"
+
+	msg2 "$(gettext "Creating working copy of %s %s repo...")" "${repo}" "hg"
+	rm -rf "${dst}"
+
+	local ref=
+	if [[ -n $fragment ]]; then
+		case ${fragment%%=*} in
+			branch|revision|tag)
+				ref=('-u' "${fragment##*=}")
+				;;
+			*)
+				error "$(gettext "Unrecognized reference: %s")" "${fragment}"
+				plain "$(gettext "Aborting...")"
+				exit 1
+		esac
+	fi
+
+	if ! hg clone "${ref[@]}" "$src" "$dst"; then
+		error "$(gettext "Failure while creating working copy of %s %s repo")" "${repo}" "hg"
+		plain "$(gettext "Aborting...")"
+		exit 1
+	fi
+
+}
+
+download_svn() {
+	local netfile=$1
+
+	local url="$(get_url "$netfile")"
+	url=${url##svn+}
+	local fragment=
+	if [[ $url = *#* ]]; then
+		fragment=${url#*#}
+	fi
+	url=${url%%#*}
+
+	local repo=$(get_downloadname "$netfile")
+	local dir="$SRCDEST/$repo"
+
+	if [[ ! -d "$dir" ]] || dir_is_empty "$dir" ; then
+		msg2 "$(gettext "Cloning %s %s repo...")" "${repo}" "svn"
+		mkdir -p "$dir/.makepkg"
+		if ! svn checkout --config-dir "$dir/.makepkg" "$url" "$dir"; then
+			error "$(gettext "Failure while downloading %s %s repo")" "${repo}" "svn"
+			plain "$(gettext "Aborting...")"
+			exit 1
+		fi
+	elif (( ! HOLDVER )); then
+		msg2 "$(gettext "Updating %s %s repo...")" "${repo}" "svn"
+		pushd "$dir" &>/dev/null
+		if ! svn update; then
+			# only warn on failure to allow offline builds
+			warning "$(gettext "Failure while updating %s %s repo")" "${repo}" "svn"
+		fi
+		popd &>/dev/null
+	fi
+}
+
+extract_svn() {
+	local netfile=$1
+
+	local url="$(get_url "$netfile")"
+	url=${url##svn+}
+	local fragment=
+	if [[ $url = *#* ]]; then
+		fragment=${url#*#}
+	fi
+
+	local repo="$(get_downloadname "$netfile")"
+	local src="$SRCDEST/$repo"
+	local dst="$srcdir/$(get_depname "$netfile")"
+
+	msg2 "$(gettext "Creating working copy of %s %s repo...")" "${repo}" "svn"
+	rm -rf "${dst}"
+
+	local ref=
+	if [[ -n $fragment ]]; then
+		case ${fragment%%=*} in
+			revision)
+				ref="${fragment##*=}"
+				;;
+			*)
+				error "$(gettext "Unrecognized reference: %s")" "${fragment}"
+				plain "$(gettext "Aborting...")"
+				exit 1
+		esac
+	fi
+
+	cp -a "$src" "$dst"
+
+	if [[ -n ${ref} ]]; then
+		pushd "$dst" &>/dev/null
+		if ! svn update -r ${ref}; then
+			error "$(gettext "Failure while creating working copy of %s %s repo")" "${repo}" "svn"
+			plain "$(gettext "Aborting...")"
+		fi
+		popd &>/dev/null
+	fi
+}
+
+download_sources() {
+	msg "$(gettext "Retrieving sources...")"
+
+	local netfile
+	for netfile in "$@"; do
+		local proto=$(get_protocol "$netfile")
+		case "$proto" in
+			git)
+				download_git "$netfile"
+				extract_git "$netfile"
+				;;
+			hg)
+				download_hg "$netfile"
+				extract_hg "$netfile"
+				;;
+			svn)
+				download_svn "$netfile"
+				extract_svn "$netfile"
+				;;
+			http|https)
+				download_file "$netfile"
+				extract_file "$netfile"
+				;;
+			*)
+				error "$(gettext "Unrecognized protocol: %s")" "$proto"
+				return 1
+				;;
+		esac
+	done
+}
+
+declare -r HOLDVER=0
+declare -r srcdir="$PWD/src/$1"; shift
+declare -r SRCDEST="$PWD/src/downloads"
+declare -r DLAGENTS=('http::/usr/bin/curl -fLC - --retry 3 --retry-delay 3 -o %o %u'
+                     'https::/usr/bin/curl -fLC - --retry 3 --retry-delay 3 -o %o %u')
+
+mkdir -p "$srcdir" "$SRCDEST"
+download_sources "$@"

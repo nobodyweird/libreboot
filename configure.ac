@@ -29,16 +29,15 @@ if test "x$HAVE_WGET" = x ; then
   AC_MSG_ERROR([Please install the 'wget' utility])
 fi
 
+AC_CHECK_PROG(HAVE_BSDTAR,bsdtar,yes)
+if test "x$HAVE_BSDTAR" = x ; then
+  AC_MSG_ERROR([Please install the 'bsdtar' utility])
+fi
+
 dnl 'sh' does not nescessarily imply 'bash'
 AC_CHECK_PROG(HAVE_BASH,bash,yes)
 if test "x$HAVE_BASH" = x ; then
   AC_MSG_ERROR([Please install the 'bash' utility])
-fi
-
-dnl This is a weird Parabola one
-AC_CHECK_PROG(HAVE_MAKEPKG,makepkg,yes)
-if test "x$HAVE_MAKEPKG" = x ; then
-  AC_MSG_ERROR([Please install the 'makepkg' utility])
 fi
 
 dnl I know that /bin/python => Python 3 works,
@@ -76,9 +75,9 @@ AC_MSG_RESULT([yes])
 
 dnl This is at least needed by memtest
 AC_LANG_PUSH([C])
-AC_MSG_NOTICE([----------------------------------------------------------------------------])
-AC_MSG_NOTICE([The next few tests are for 32-bit C, NOT necessarily the native architecture])
-AC_MSG_NOTICE([----------------------------------------------------------------------------])
+AC_MSG_NOTICE([-----------------------------------------------------------------------------])
+AC_MSG_NOTICE([The remaining tests are for 32-bit C, NOT necessarily the native architecture])
+AC_MSG_NOTICE([-----------------------------------------------------------------------------])
 AC_MSG_NOTICE([If you have GCC, but these fail, look for a 'gcc-multilib' package])
 CFLAGS='-march=i486 -m32'
 AC_CHECK_HEADERS([stdint.h sys/io.h],,[AC_MSG_ERROR([Could not find libc headers])])
