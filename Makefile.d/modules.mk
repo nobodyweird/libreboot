@@ -13,7 +13,7 @@ define rule_module_files
 src/%(arch)/%(module)/%: | tmp/builddeps-stamps/%(arch)/%(module)
 	test -e $@
 endef
-$(eval $(call multiglob,modules_files,arch module))
+$(eval $(call multiglob,module_files,arch module))
 
 # The generic rules
 
@@ -31,7 +31,7 @@ $(eval $(call multiglob,download,arch module))
 # % = arch/module
 tmp/builddeps-stamps/%: src/%
 	cd $< && { test -f ./Makefile || test -x ./configure || ./autogen.sh; }
-	cd $< && { test -f ./Makefile || ./configure $($*_configure); }
+	cd $< && { test -f ./Makefile || ./configure $($(*F)_configure); }
 	$(MAKE) -C $<
 	mkdir -p $(@D)
 	touch $@

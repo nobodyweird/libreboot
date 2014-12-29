@@ -29,7 +29,7 @@ define rule_coreboot_utils
 src/%(arch)/coreboot/util/%(coreboot_util): | src/%(arch)/coreboot
 	test -d $@
 endef
-$(eval $(call multiglob,coreboot_utils,arch coreboot_utils))
+$(eval $(call multiglob,coreboot_utils,arch coreboot_util))
 
 # The builddeps stamp needs to depend on 3 "utility" builddeps
 $(foreach arch,$(arches),tmp/builddeps-stamps/$(arch)/coreboot): \

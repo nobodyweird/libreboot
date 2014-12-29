@@ -27,12 +27,12 @@ roms/%(board)_%(keymap)_%(romtype).rom: \
 	cp $< $@.tmp
 	$(CBFSTOOL) $@.tmp add -f tmp/grub_%(keymap)_%(romtype).cfg -n grub.cfg -t raw
 	$(CBFSTOOL) $@.tmp add -f tmp/grub_%(keymap)_%(romtype)_test.cfg -n grubtest.cfg -t raw
+# Needed on i945 systems for the bucts/dd trick (documented)
+# This enables the ROM to be flashed over the lenovo bios firmware
 	$(if $(filter %(board),$(i945boards)),\
-		# Needed on i945 systems for the bucts/dd trick (documented)
-		# This enables the ROM to be flashed over the lenovo bios firmware
 		dd if='$@.tmp' of='$@.tmp.top64k' bs=1 skip=$$[$$(stat -c %s '$@.tmp') - 0x10000] count=64k && \
 		dd if='$@.tmp.top64k' of='$@.tmp' bs=1 seek=$$[$$(stat -c %s '$@.tmp') - 0x20000] count=64k conv=notrunc && \
 		rm -f '$@.tmp.top64k')
-	mv $@.tmp $@
+	mv -f $@.tmp $@
 endef
 $(eval $(call multiglob,rom,board keymap romtype))
