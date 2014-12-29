@@ -11,7 +11,7 @@ GRUB_MKIMAGE = src/$(host_arch)/grub/grub-mkimage
 GRUB_MKSTANDALONE = src/$(host_arch)/grub/grub-mkstandalone --grub-mkimage=$(GRUB_MKIMAGE) -d src/$(host_arch)/grub/grub-core/
 CBFSTOOL = src/$(host_arch)/coreboot/util/cbfstool/cbfstool
 
-arches = i686 x86_64
+arches := $(sort $(host_arch) i686)
 archs = $(arches)
 boards = x60 t60 x60t macbook21
 romtypes = txtmode vesafb
@@ -24,14 +24,23 @@ roms = $(foreach board,$(boards),\
                            $(foreach romtype,$(romtypes),\
                                      $(board)_$(keymap)_$(romtype))))
 
-build: PHONY \
-	$(foreach rom,$(roms),roms/$(rom).rom roms/$(rom)_with_seabios.rom) \
-	src/$(host_arch)/flashrom/flashrom_normal \
-	src/$(host_arch)/flashrom/flashrom_lenovobios_macronix \
-	src/$(host_arch)/flashrom/flashrom_lenovobios_sst \
-	src/$(host_arch)/bucts/bucts
+all: PHONY build
+
+build: PHONY roms tools # $(addprefix tools-,$(arches))
+roms: PHONY $(foreach rom,$(roms),roms/$(rom).rom roms/$(rom)_with_seabios.rom)
+
+tools: PHONY tools-$(host_arch)
+$(addprefix tools-,$(arches)): tools-%: PHONY \
+	src/%/bucts/bucts \
+	src/%/flashrom/flashrom_normal \
+	src/%/flashrom/flashrom_lenovobios_macronix \
+	src/%/flashrom/flashrom_lenovobios_sst \
+	src/%/coreboot/util/cbfstool/cbfstool \
+	src/%/coreboot/util/cbfstool/rmodtool \
+	src/%/coreboot/util/nvramtool/nvramtool
 
 
+# Multiglob magic
 
 define _nl
 
@@ -44,21 +53,25 @@ multiglob = $(if $(strip $2),\
                  $(_nl)$(value rule_$1)$(_nl))
 
 
+# Normal make rules
 
 configure: configure.ac
 	autoconf
 
-Makefile.d/keymap-list.mk: $(keymapdir)/original/ Makefile
+Makefile.d/keymap-list.mk: $(keymapdir)/original/
 	echo keymaps = $(notdir $(wildcard $</*)) > $@
-Makefile.d/modules-list.mk: Makefile.d/modules/ Makefile
+Makefile.d/modules-list.mk: Makefile.d/modules/
 	echo modules = $(patsubst %.mk,%,$(notdir $(wildcard $</*.mk))) > $@
 
 resources/grub/font/dejavusansmono.pf2: src/$(host_arch)/dejavu/ttf/DejaVuSansMono.ttf $(firstword $(GRUB_MKFONT))
 	$(GRUB_MKFONT) -o $@ $<
 
-# % = $(keymap)
+# % = %(keymap)
 $(keymapdir)/%.gkb: $(keymapdir)/original/% $(firstword $(GRUB_MKLAYOUT))
 	$(GRUB_MKLAYOUT) -o $@ < $<
+
+
+# Includes
 
 -include Makefile.d/modules-list.mk # sets "modules=..."
 include $(patsubst %,Makefile.d/modules/%.mk,$(modules))
@@ -75,5 +88,6 @@ include Makefile.d/build-release.mk
 
 
 .DELETE_ON_ERROR:
-PHONY:
+.SECONDARY:
 .PHONY: PHONY
+PHONY:
