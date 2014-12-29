@@ -1,6 +1,7 @@
 # Just for convenience
 keymapdir = resources/utilities/grub-assemble/keymap
 
+GRUB_MKFONT = src/grub/grub-mkfont
 GRUB_MKLAYOUT = src/grub/grub-mklayout
 GRUB_MKIMAGE = src/grub/grub-mkimage
 GRUB_MKSTANDALONE = src/grub/grub-mkstandalone --grub-mkimage=$(GRUB_MKIMAGE) -d src/grub/grub-core/
