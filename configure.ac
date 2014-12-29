@@ -24,7 +24,7 @@ if test "x$HAVE_GIT" = x ; then
   AC_MSG_ERROR([Please install the 'git' utility])
 fi
 
-AC_CHECK_PROG(HAVE_WGET,WGET,yes)
+AC_CHECK_PROG(HAVE_WGET,wget,yes)
 if test "x$HAVE_WGET" = x ; then
   AC_MSG_ERROR([Please install the 'wget' utility])
 fi
