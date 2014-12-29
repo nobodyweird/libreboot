@@ -18,7 +18,11 @@ roms = $(foreach board,$(boards),\
                            $(foreach romtype,$(romtypes),\
                                      $(board)_$(keymap)_$(romtype))))
 
-build: PHONY $(foreach rom,$(roms),bin/$(rom).rom bin/$(rom)_with_seabios.rom)
+build: PHONY \
+	$(foreach rom,$(roms),bin/$(rom).rom bin/$(rom)_with_seabios.rom) \
+	src/flashrom/flashrom_normal \
+	src/flashrom/flashrom_lenovobios_macronix \
+	src/flashrom/flashrom_lenovobios_sst \
 
 define _nl
 

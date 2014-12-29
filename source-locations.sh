@@ -37,7 +37,7 @@ flashrom_mksource() {
 	cp "$resources"/flashrom/patch/flashchips_*.c .
 	sed -i \
 	    -e 's/^CFLAGS\s*?=.*/& -static/' \
-	    -e 's/^PROGRAM\s*=/PROGRAM = flashrom$(patchname)/' \
+	    -e 's/\$(PROGRAM)\$(EXEC_SUFFIX)/$(PROGRAM)$(patchname)$(EXEC_SUFFIX)/g' \
 	    -e 's/flashchips\.o/flashchips$(patchname).o/g' \
 	    -e 's/libflashrom\.a/libflashrom$(patchname).a/g' \
 	    -e 's/\(rm .*libflashrom\)\S*\.a/\1*.a $(PROGRAM)_*/' \

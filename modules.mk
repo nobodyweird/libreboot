@@ -75,9 +75,9 @@ cleandeps-coreboot-custom:: PHONY
 	rm -f tmp/builddeps-coreboot-*.stamp
 
 tmp/builddeps-flashrom.stamp:: src/flashrom
-	$(MAKE) -C $< patchname=_normal PROGRAM=flashrom
+	$(MAKE) -C $< patchname=_normal
 	$(MAKE) -C $< patchname=_lenovobios_macronix
-	$(MAKE) -C $< patchname=_sst
+	$(MAKE) -C $< patchname=_lenovobios_sst
 	touch $@
 
 tmp/builddeps-grub.stamp:: src/grub
