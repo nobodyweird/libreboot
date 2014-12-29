@@ -14,7 +14,7 @@ grub_vesafb_memdisk_deps  = $(foreach graft,$(grub_vesafb_memdisk_grafts) ,$(las
 define rule_grub_elf
 tmp/grub_%(romtype).elf: \
     tmp/builddeps-stamps/$(host_arch)/grub \
-    $(keymapdir)/list.mk resources/utilities/grub-assemble/modules.conf \
+    Makefile.d/keymap-list.mk resources/utilities/grub-assemble/modules.conf \
     resources/grub/config/grub_memdisk.cfg \
     $(grub_%(romtype)_memdisk_deps) \
     $(firstword $(GRUB_MKSTANDALONE)) \
