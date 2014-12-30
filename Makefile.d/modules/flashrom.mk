@@ -13,8 +13,8 @@ endef
 
 $(foreach arch,$(arches),tmp/builddeps-stamps/$(arch)/flashrom): \
 tmp/builddeps-stamps/%/flashrom: src/%/flashrom
-	$(MAKE) -C $< patchname=_normal
-	$(MAKE) -C $< patchname=_lenovobios_macronix
-	$(MAKE) -C $< patchname=_lenovobios_sst
+	$(MAKE) CC='$(CC)' -C $< patchname=_normal
+	$(MAKE) CC='$(CC)' -C $< patchname=_lenovobios_macronix
+	$(MAKE) CC='$(CC)' -C $< patchname=_lenovobios_sst
 	mkdir -p $(@D)
 	touch $@

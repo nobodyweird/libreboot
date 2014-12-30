@@ -41,21 +41,21 @@ tmp/builddeps-stamps/%/coreboot: \
 
 # The 3 actual utility builddeps:
 tmp/builddeps-stamps/%/coreboot-cbfstool: src/%/coreboot/util/cbfstool
-	$(MAKE) -C $<
+	$(MAKE) CC='$(CC)' -C $<
 	mkdir -p $(@D)
 	touch $@
 tmp/builddeps-stamps/%/coreboot-nvramtool: src/%/coreboot/util/nvramtool
-	$(MAKE) -C $<
+	$(MAKE) CC='$(CC)' -C $<
 	mkdir -p $(@D)
 	touch $@
 tmp/builddeps-stamps/%/coreboot-crossgcc: src/%/coreboot/util/crossgcc
-	$(MAKE) -C src/$*/coreboot crossgcc-i386
+	$(MAKE) CC='$(CC)' -C src/$*/coreboot crossgcc-i386
 	mkdir -p $(@D)
 	touch $@
 
 cleandeps-%/coreboot-custom: PHONY
-	test ! -f src/%/coreboot/Makefile || $(MAKE) -C src/%/coreboot clean
-	test ! -f src/%/coreboot/Makefile || $(MAKE) -C src/%/coreboot/util/cbfstool clean
-	test ! -f src/%/coreboot/Makefile || $(MAKE) -C src/%/coreboot/util/nvramtool clean
-	test ! -f src/%/coreboot/Makefile || $(MAKE) -C src/%/coreboot crossgcc-clean
+	test ! -f src/%/coreboot/Makefile || $(MAKE) CC='$(CC)' -C src/%/coreboot clean
+	test ! -f src/%/coreboot/Makefile || $(MAKE) CC='$(CC)' -C src/%/coreboot/util/cbfstool clean
+	test ! -f src/%/coreboot/Makefile || $(MAKE) CC='$(CC)' -C src/%/coreboot/util/nvramtool clean
+	test ! -f src/%/coreboot/Makefile || $(MAKE) CC='$(CC)' -C src/%/coreboot crossgcc-clean
 	rm -f tmp/builddeps-stamps/%/coreboot-*

@@ -32,7 +32,7 @@ $(eval $(call multiglob,download,arch module))
 tmp/builddeps-stamps/%: src/%
 	cd $< && { test -f ./Makefile || test -x ./configure || ./autogen.sh; }
 	cd $< && { test -f ./Makefile || ./configure $($(*F)_configure); }
-	$(MAKE) -C $<
+	$(MAKE) CC='$(CC)' -C $<
 	mkdir -p $(@D)
 	touch $@
 
@@ -41,4 +41,4 @@ $(foreach arch,$(arches),$(foreach module,$(modules), cleandeps-$(arch)/$(module
 cleandeps-%: PHONY cleandeps-%-custom
 	rm -f tmp/builddeps-stamps/%
 cleandeps-%-custom: PHONY
-	test ! -f src/$*/Makefile || $(MAKE) -C src/$* clean
+	test ! -f src/$*/Makefile || $(MAKE) CC='$(CC)' -C src/$* clean

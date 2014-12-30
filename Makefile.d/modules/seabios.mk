@@ -3,6 +3,6 @@ seabios_source = git://git.seabios.org/seabios.git\#commit=9f505f715793d99235bd6
 $(foreach arch,$(arches),tmp/builddeps-stamps/$(arch)/seabios): \
 tmp/builddeps-stamps/%/seabios: src/%/seabios resources/seabios/config/config
 	cp resources/seabios/config/config $</.config
-	$(MAKE) -C $<
+	$(MAKE) CC='$(CC)' -C $<
 	mkdir -p $(@D)
 	touch $@

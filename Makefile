@@ -1,6 +1,8 @@
 VERSION := $(shell if test -f version.txt; then cat version.txt; else git describe; fi)
 host_arch := $(shell uname -m)
-#export CC := $(CC) -static
+
+export SHARED=0
+export CC = gcc -static $(if $(findstring i686,$@),-m32)
 
 # Just for convenience
 keymapdir = resources/utilities/grub-assemble/keymap
