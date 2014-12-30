@@ -1,55 +1,48 @@
-AC_PREREQ([2.69])
-
-if test -f version.txt ; then
-  VERSION=`cat version.txt`
-else
-  VERSION=`git describe`
-fi
-
-AC_INIT([libreboot], $VERSION, [info@gluglug.org.uk])
-
-dnl TODO: wait until the end to exit with an error?
-
 dnl My goal with this file is to check for all of the dependencies
 dnl that aren't in 'base-devel' on Parabola, or 'build-essential' on
 dnl Trisquel 7.
 
-AC_CHECK_PROG(HAVE_SVN,svn,yes)
-if test "x$HAVE_SVN" = x ; then
-  AC_MSG_ERROR([Please install the 'svn' utility])
+AC_PREREQ([2.69])
+
+if test -f version.txt ; then
+  PACKAGE_VERSION=`cat version.txt`
+else
+  PACKAGE_VERSION=`git describe`
 fi
 
-AC_CHECK_PROG(HAVE_GIT,git,yes)
-if test "x$HAVE_GIT" = x ; then
-  AC_MSG_ERROR([Please install the 'git' utility])
-fi
+AC_INIT([libreboot], ${PACKAGE_VERSION}, [info@gluglug.org.uk], [], [http://libreboot.org/])
+m4_include(m4/ax_check_compile_flag.m4)
+m4_include(m4/ax_check_link_flag.m4)
 
-AC_CHECK_PROG(HAVE_WGET,wget,yes)
-if test "x$HAVE_WGET" = x ; then
-  AC_MSG_ERROR([Please install the 'wget' utility])
-fi
-
-AC_CHECK_PROG(HAVE_BSDTAR,bsdtar,yes)
-if test "x$HAVE_BSDTAR" = x ; then
-  AC_MSG_ERROR([Please install the 'bsdtar' utility])
-fi
+missing=''
 
 dnl 'sh' does not nescessarily imply 'bash'
 AC_CHECK_PROG(HAVE_BASH,bash,yes)
-if test "x$HAVE_BASH" = x ; then
-  AC_MSG_ERROR([Please install the 'bash' utility])
-fi
+test "x$HAVE_BASH" = xyes || missing="$missing bash"
+
+AC_CHECK_PROG(HAVE_BSDTAR,bsdtar,yes)
+test "x$HAVE_BSDTAR" = xyes || missing="$missing bsdtar"
+
+AC_CHECK_PROG(HAVE_GIT,git,yes)
+test "x$HAVE_GIT" = xyes || missing="$missing git"
+
+AC_CHECK_PROG(HAVE_IASL,iasl,yes)
+test "x$HAVE_IASL" = xyes || missing="$missing iasl"
 
 dnl I know that /bin/python => Python 3 works,
 dnl I haven't verified that /bin/python => Python 2 works.
+dnl (needed for grub's build)
 AC_CHECK_PROG(HAVE_PYTHON,python,yes)
-if test "x$HAVE_PYTHON" = x ; then
-  AC_MSG_ERROR([Please install the 'python' utility])
-fi
+test "x$HAVE_PYTHON" = xyes || missing="$missing python"
 
-AC_CHECK_PROG(HAVE_IASL,iasl,yes)
-if test "x$HAVE_IASL" = x ; then
-  AC_MSG_ERROR([Please install the 'iasl' utility, it is needed for SeaBIOS])
+AC_CHECK_PROG(HAVE_SVN,svn,yes)
+test "x$HAVE_SVN" = xyes || missing="$missing svn"
+
+AC_CHECK_PROG(HAVE_WGET,wget,yes)
+test "x$HAVE_WGET" = xyes || missing="$missing wget"
+
+if test "x$missing" != x ; then
+  AC_MSG_ERROR([The following needed programs were not found:$missing])
 fi
 
 dnl This check is from grub's configure.ac
@@ -73,12 +66,68 @@ if test "x$FONT_SOURCE" = x ; then
 fi
 AC_MSG_RESULT([yes])
 
-dnl This is at least needed by memtest
+dnl This test is based on memtest86+
 AC_LANG_PUSH([C])
-AC_MSG_NOTICE([-----------------------------------------------------------------------------])
-AC_MSG_NOTICE([The remaining tests are for 32-bit C, NOT necessarily the native architecture])
-AC_MSG_NOTICE([-----------------------------------------------------------------------------])
-AC_MSG_NOTICE([If you have GCC, but these fail, look for a 'gcc-multilib' package])
-CFLAGS='-march=i486 -m32'
-AC_CHECK_HEADERS([stdint.h sys/io.h],,[AC_MSG_ERROR([Could not find libc headers])])
+AX_CHECK_COMPILE_FLAG([-march=i486 -m32], [], [AC_MSG_ERROR([Cannot compile for 32-bit])], [], [AC_LANG_SOURCE
+#include <stdint.h>
+#include <sys/io.h>
+])
+
+MAINTAINER_MODE=y
+AC_SUBST(MAINTAINER_MODE)
+
+dnl This check is from flashrom's Makefile
+AX_CHECK_LINK_FLAG([-static -m64], [],
+  [
+   if test "x$MAINTAINER_MODE" != x ; then
+     AC_MSG_NOTICE([Cannot compile statically for 64-bit; disabling maintainer mode])
+     MAINTAINER_MODE=
+   fi
+  ],
+  [-lz -lpci],
+  [AC_LANG_SOURCE
+ #define index shadow_workaround_index
+#if !defined __NetBSD__ && !defined __DragonFly__
+#include <pci/pci.h>
+#else
+#include <pciutils/pci.h>
+#endif
+struct pci_access *pacc;
+int main(int argc, char **argv)
+{
+	(void) argc;
+	(void) argv;
+	pacc = pci_alloc();
+	return 0;
+}
+])
+
+dnl This check is from flashrom's Makefile
+AX_CHECK_LINK_FLAG([-static -m32], [],
+  [
+   if test "x$MAINTAINER_MODE" != x ; then
+     AC_MSG_NOTICE([Cannot compile statically for 32-bit; disabling maintainer mode])
+     MAINTAINER_MODE=
+   fi
+  ],
+  [-lz -lpci],
+  [AC_LANG_SOURCE
+#define index shadow_workaround_index
+#if !defined __NetBSD__ && !defined __DragonFly__
+#include <pci/pci.h>
+#else
+#include <pciutils/pci.h>
+#endif
+struct pci_access *pacc;
+int main(int argc, char **argv)
+{
+	(void) argc;
+	(void) argv;
+	pacc = pci_alloc();
+	return 0;
+}
+])
 AC_LANG_POP([C])
+
+AC_CONFIG_FILES([config.mk])
+AC_OUTPUT

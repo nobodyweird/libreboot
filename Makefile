@@ -1,8 +1,8 @@
-VERSION := $(shell if test -f version.txt; then cat version.txt; else git describe; fi)
+-include config.mk
 host_arch := $(shell uname -m)
 
 export SHARED=0
-export CC = gcc -static $(if $(findstring i686,$@),-m32)
+export CC = gcc $(if $(MAINTAINER_MODE),-static) $(if $(findstring i686,$@),-m32,-m64)
 
 # Just for convenience
 keymapdir = resources/utilities/grub-assemble/keymap
@@ -28,7 +28,7 @@ roms = $(foreach board,$(boards),\
 
 all: PHONY build
 
-build: PHONY roms tools # $(addprefix tools-,$(arches))
+build: PHONY roms $(if $(MAINTAINER_MODE),$(addprefix tools-,$(arches)),tools)
 roms: PHONY $(foreach rom,$(roms),roms/$(rom).rom roms/$(rom)_with_seabios.rom)
 
 tools: PHONY tools-$(host_arch)
@@ -59,6 +59,9 @@ multiglob = $(if $(strip $2),\
 
 configure: configure.ac
 	autoconf
+
+config.mk: configure config.mk.in
+	./configure
 
 Makefile.d/keymap-list.mk: $(keymapdir)/original/
 	echo keymaps = $(notdir $(wildcard $</*)) > $@

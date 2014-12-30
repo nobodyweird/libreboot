@@ -23,31 +23,31 @@ dist_files = \
 dist_dirs = docs bin resources
 
 distdir: PHONY \
-    libreboot-$(VERSION)/version.txt \
-    $(addprefix libreboot-$(VERSION)/utils/$(arch)/,$(dist_utils)) \
-    $(addprefix libreboot-$(VERSION)/,$(dist_files) $(dist_dirs))
+    $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/version.txt \
+    $(addprefix $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/utils/$(arch)/,$(dist_utils)) \
+    $(addprefix $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/,$(dist_files) $(dist_dirs))
 
-libreboot-$(VERSION)/utils/$(arch)/bucts: src/bucts/bucts
+$(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/utils/$(arch)/bucts: src/bucts/bucts
 	mkdir -p $(@D)
 	cp $< $@
-libreboot-$(VERSION)/utils/$(arch)/flashrom_%: src/flashrom/flashrom_%
+$(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/utils/$(arch)/flashrom_%: src/flashrom/flashrom_%
 	mkdir -p $(@D)
 	cp $< $@
-libreboot-$(VERSION)/utils/$(arch)/cbfstool: src/coreboot/util/cbfstool/cbfstool
+$(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/utils/$(arch)/cbfstool: src/coreboot/util/cbfstool/cbfstool
 	mkdir -p $(@D)
 	cp $< $@
-libreboot-$(VERSION)/utils/$(arch)/nvramtool: src/coreboot/util/nvramtool/nvramtool
+$(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/utils/$(arch)/nvramtool: src/coreboot/util/nvramtool/nvramtool
 	mkdir -p $(@D)
 	cp $< $@
-$(addprefix libreboot-$(VERSION)/,$(dist_files)): \
-libreboot-$(VERSION)/%: %
+$(addprefix $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/,$(dist_files)): \
+$(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/%: %
 	mkdir -p $(@D)
 	cp $< $@
-$(addprefix libreboot-$(VERSION)/,$(dist_dirs)): \
-libreboot-$(VERSION)/%: %
+$(addprefix $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/,$(dist_dirs)): \
+$(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/%: %
 	mkdir -p $(@D)
 	cp -r $< $@
 
-libreboot-$(VERSION)/version.txt: PHONY
+$(PACKAGE_TARNAME)-$(PACKAGE_VERSION)/version.txt: PHONY
 	mkdir -p $(@D)
 	echo $(VERSION) > $@

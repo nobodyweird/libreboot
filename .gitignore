@@ -5,5 +5,7 @@
 /libreboot-*
 
 /configure
-/config.log
+/config.mk
+/config.status
+/*.log
 /autom4te.cache/
