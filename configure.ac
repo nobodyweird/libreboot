@@ -1,6 +1,46 @@
+# Copyright (C) 2014 Luke Shumaker <lukeshu@sbcglobal.net>
+
+## Because of a test borrowed from flashrom's Makefile:
+#
+# Copyright (C) 2005 coresystems GmbH <stepan@coresystems.de>
+# Copyright (C) 2009,2010,2012 Carl-Daniel Hailfinger
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+
+## Because of a test borrowed from grub's configure.ac:
+#
+# Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010  Free Software Foundation, Inc.
+#
+# This configure.ac is free software; the author
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
 dnl My goal with this file is to check for all of the dependencies
 dnl that aren't in 'base-devel' on Parabola, or 'build-essential' on
 dnl Trisquel 7.
+dnl
+dnl That is, it doesn't quite check for everything, but gives the user
+dnl a pretty good idea of "do I have the packages I need to build
+dnl this?"
+dnl
+dnl Also, it sets MAINTAINER_MODE in config.mk, which decides whether
+dnl to build static tools for both architectures.
 
 AC_PREREQ([2.69])
 
@@ -11,8 +51,6 @@ else
 fi
 
 AC_INIT([libreboot], ${PACKAGE_VERSION}, [info@gluglug.org.uk], [], [http://libreboot.org/])
-m4_include(m4/ax_check_compile_flag.m4)
-m4_include(m4/ax_check_link_flag.m4)
 
 missing=''
 
@@ -44,6 +82,9 @@ test "x$HAVE_WGET" = xyes || missing="$missing wget"
 if test "x$missing" != x ; then
   AC_MSG_ERROR([The following needed programs were not found:$missing])
 fi
+
+m4_include(m4/ax_check_compile_flag.m4)
+m4_include(m4/ax_check_link_flag.m4)
 
 dnl This check is from grub's configure.ac
 AC_MSG_CHECKING([for unifont])

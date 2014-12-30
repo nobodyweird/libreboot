@@ -1,3 +1,21 @@
+#
+#	Copyright (C) 2014 Francis Rowe <info@gluglug.org.uk>
+#	Copyright (C) 2014 Luke Shumaker <lukeshu@sbcglobal.net>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
 # Easy names for tmp/builddeps-stamps/%
 $(foreach arch,$(arches),$(foreach module,$(modules), builddeps-$(arch)/$(module) )): builddeps-%: PHONY tmp/builddeps-stamps/%
 
@@ -28,7 +46,7 @@ endef
 $(eval $(call multiglob,download,arch module))
 
 # "builddeps" and "cleandeps" rules
-# % = arch/module
+# % = %(arch)/%(module)
 tmp/builddeps-stamps/%: src/%
 	cd $< && { test -f ./Makefile || test -x ./configure || ./autogen.sh; }
 	cd $< && { test -f ./Makefile || ./configure $($(*F)_configure); }
