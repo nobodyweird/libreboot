@@ -29,10 +29,13 @@ if (( $# != 1 )); then
 	exit 1
 fi
 
+
+
 # This is where GRUB is expected to be (outside of the grub-assemble, instead in main checkout)
 grubdir="../../../grub"
 
 source "modules.conf"
+source "functions.sh"
 
 list_keymaps () {
 	for keylayout in keymap/original/*
