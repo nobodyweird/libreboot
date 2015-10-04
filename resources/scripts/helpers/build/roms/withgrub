@@ -32,11 +32,30 @@ then
 	mkdir "bin/"
 fi
 
+make_grub_config_file () {
+	if (( $# != 2 )); then
+		printf "Usage: make_grub_config_file romtype keymap\n"
+		printf "romtype can be txtmode or vesafb\n"
+		printf "keymaps are defined in git repo /resources/utilities/grub-assemble\n"
+		exit 1
+	fi
+
+	romtype="${1}"
+	keymap="${2}"
+
+	cat "../resources/grub/config/extra/common.cfg" > "grub_${keymap}_${romtype}.cfg"
+	cat "../resources/grub/config/extra/${romtype}.cfg" >> "grub_${keymap}_${romtype}.cfg"
+	printf "keymap %s\n" "${keymap}" >> "grub_${keymap}_${romtype}.cfg"
+	cat "../resources/grub/config/menuentries/common.cfg" >> "grub_${keymap}_${romtype}.cfg"
+	cat "../resources/grub/config/menuentries/${romtype}.cfg" >> "grub_${keymap}_${romtype}.cfg"
+	# grubtest.cfg should be able to switch back to grub.cfg
+	sed 's/grubtest.cfg/grub.cfg/' < "grub_${keymap}_${romtype}.cfg" > "grub_${keymap}_${romtype}_test.cfg"
+}
+
 # Put GRUB payloads and config files
 # in the coreboot directory, ready for next step
 cd "coreboot/"
-for romtype in txtmode vesafb
-do
+for romtype in txtmode vesafb; do
 	cd "../resources/utilities/grub-assemble"
 	./gen.sh ${romtype}
 	rm -f "../../../coreboot/grub_${romtype}.elf"
@@ -44,16 +63,8 @@ do
 	cd "../../../coreboot"
 
 	# GRUB configuration files
-	for keylayout in ../resources/utilities/grub-assemble/keymap/original/*
-	do
-		keymap="${keylayout##*/}"
-		cat "../resources/grub/config/extra/common.cfg" > "grub_${keymap}_${romtype}.cfg"
-		cat "../resources/grub/config/extra/${romtype}.cfg" >> "grub_${keymap}_${romtype}.cfg"
-		printf "keymap %s\n" "${keymap}" >> "grub_${keymap}_${romtype}.cfg"
-		cat "../resources/grub/config/menuentries/common.cfg" >> "grub_${keymap}_${romtype}.cfg"
-		cat "../resources/grub/config/menuentries/${romtype}.cfg" >> "grub_${keymap}_${romtype}.cfg"
-		# grubtest.cfg should be able to switch back to grub.cfg
-		sed 's/grubtest.cfg/grub.cfg/' < "grub_${keymap}_${romtype}.cfg" > "grub_${keymap}_${romtype}_test.cfg"
+	for keylayout in ../resources/utilities/grub-assemble/keymap/original/*; do
+		make_grub_config_file "${romtype}" "${keylayout##*/}"
 	done
 done
 cd ../
