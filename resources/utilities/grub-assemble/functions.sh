@@ -32,11 +32,11 @@ make_grub_config_file () {
 	romtype="${1}"
 	keymap="${2}"
 
-	cat "../../grub/config/extra/common.cfg" > "grub_${keymap}_${romtype}.cfg"
-	cat "../../grub/config/extra/${romtype}.cfg" >> "grub_${keymap}_${romtype}.cfg"
+	cat "../resources/grub/config/extra/common.cfg" > "grub_${keymap}_${romtype}.cfg"
+	cat "../resources/grub/config/extra/${romtype}.cfg" >> "grub_${keymap}_${romtype}.cfg"
 	printf "keymap %s\n" "${keymap}" >> "grub_${keymap}_${romtype}.cfg"
-	cat "../../grub/config/menuentries/common.cfg" >> "grub_${keymap}_${romtype}.cfg"
-	cat "../../grub/config/menuentries/${romtype}.cfg" >> "grub_${keymap}_${romtype}.cfg"
+	cat "../resources/grub/config/menuentries/common.cfg" >> "grub_${keymap}_${romtype}.cfg"
+	cat "../resources/grub/config/menuentries/${romtype}.cfg" >> "grub_${keymap}_${romtype}.cfg"
 	# grubtest.cfg should be able to switch back to grub.cfg
 	sed 's/grubtest.cfg/grub.cfg/' < "grub_${keymap}_${romtype}.cfg" > "grub_${keymap}_${romtype}_test.cfg"
 }

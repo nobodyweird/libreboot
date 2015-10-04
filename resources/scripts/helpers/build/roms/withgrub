@@ -25,7 +25,7 @@
 [ "x${DEBUG+set}" = 'xset' ] && set -v
 set -u -e
 
-source "../../../../utilities/grub-assemble/functions.sh"
+source "resources/utilities/grub-assemble/functions.sh"
 
 printf "Building ROM images with the GRUB payload\n"
 
