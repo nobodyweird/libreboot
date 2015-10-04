@@ -40,3 +40,11 @@ make_grub_config_file () {
 	# grubtest.cfg should be able to switch back to grub.cfg
 	sed 's/grubtest.cfg/grub.cfg/' < "grub_${keymap}_${romtype}.cfg" > "grub_${keymap}_${romtype}_test.cfg"
 }
+
+list_keymaps () {
+	for keylayout in keymap/original/*
+	do
+		keymap="${keylayout##*/}"
+		printf "/boot/grub/layouts/%s.gkb=keymap/%s.gkb " "${keymap}" "${keymap}"
+	done
+}

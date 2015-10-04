@@ -29,21 +29,12 @@ if (( $# != 1 )); then
 	exit 1
 fi
 
-
-
 # This is where GRUB is expected to be (outside of the grub-assemble, instead in main checkout)
 grubdir="../../../grub"
 
 source "modules.conf"
 source "functions.sh"
 
-list_keymaps () {
-	for keylayout in keymap/original/*
-	do
-		keymap="${keylayout##*/}"
-		printf "/boot/grub/layouts/%s.gkb=keymap/%s.gkb " "${keymap}" "${keymap}"
-	done
-}
 keymaps=$(list_keymaps)
 
 printf "Creating GRUB ELF executable for configuration '%s'\n" "${1}"
