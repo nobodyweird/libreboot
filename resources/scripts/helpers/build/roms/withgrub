@@ -46,7 +46,7 @@ for romtype in txtmode vesafb; do
 
 	# GRUB configuration files
 	cd "../resources/utilities/grub-assemble/"
-	for keylayout in ../resources/utilities/grub-assemble/keymap/original/*; do
+	for keylayout in keymap/original/*; do
 		make_grub_config_file "${romtype}" "${keylayout##*/}"
 	done
 	for i in grub*.cfg; do
