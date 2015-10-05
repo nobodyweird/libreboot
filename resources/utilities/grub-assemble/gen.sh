@@ -18,6 +18,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# NOTE: it is assumed when running this script, that the current working
+# directory is resources/utilities/grub-assemble/
+
 [ "x${DEBUG+set}" = 'xset' ] && set -v
 set -u -e
 
@@ -43,8 +46,10 @@ keymaps=$(list_keymaps)
 # will contain every other keyboard layout, so that the user can
 # easily choose any layout, without having to re-compile
 printf "Creating GRUB ELF executable for configuration '%s'\n" "${1}"
-if [ "${1}" = "vesafb" ]
-then
+if [ "${1}" = "vesafb" ]; then
+	cat "../../../resources/grub/config/grub_memdisk.cfg" > "grub_usqwerty_vesafb.cfg"
+	make_grub_config_file vesafb usqwerty
+
 	# Generate the grub.elf (vesafb)
 	$grubdir/grub-mkstandalone \
 	  --grub-mkimage="${grubdir}/grub-mkimage" \
@@ -54,11 +59,14 @@ then
 	  --fonts= --themes= --locales=  \
 	  --modules="${grub_modules}" \
 	  --install-modules="${grub_install_modules}" \
-	  /boot/grub/grub.cfg="../../../resources/grub/config/grub_memdisk.cfg" \
+	  /boot/grub/grub.cfg="grub_usqwerty_vesafb.cfg" \
 	  /dejavusansmono.pf2="../../../resources/grub/font/dejavusansmono.pf2" \
 	  ${keymaps}
-elif [ "${1}" = "txtmode" ]
-then
+
+elif [ "${1}" = "txtmode" ]; then
+	cat "../../../resources/grub/config/grub_memdisk.cfg" > "grub_usqwerty_txtmode.cfg"
+	make_grub_config_file txtmode usqwerty
+
 	# Generate the grub.elf (txtmode)
 	"${grubdir}/grub-mkstandalone" \
 	  --grub-mkimage="${grubdir}/grub-mkimage" \
@@ -68,12 +76,14 @@ then
 	  --fonts= --themes= --locales=  \
 	  --modules="${grub_modules}" \
 	  --install-modules="${grub_install_modules}" \
-	  /boot/grub/grub.cfg="../../../resources/grub/config/grub_memdisk.cfg" \
+	  /boot/grub/grub.cfg="grub_usqwerty_txtmode.cfg" \
 	  /memtest="../../../memtest86plus/memtest" \
 	  ${keymaps}
 else
 	printf "grub-assemble gen.sh: invalid mode '%s'\n" "${1}"
 	exit 1
 fi
+
+rm -f "grub"*.cfg
 printf "\n\n"
 
