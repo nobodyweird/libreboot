@@ -49,7 +49,10 @@ for romtype in txtmode vesafb; do
 	for keylayout in ../resources/utilities/grub-assemble/keymap/original/*; do
 		make_grub_config_file "${romtype}" "${keylayout##*/}"
 	done
-	cd "../../../coreboot"
+	for i in grub*.cfg; do
+		mv "${i}" "../../../coreboot/"
+	done
+	cd "../../../coreboot/"
 done
 cd ../
 

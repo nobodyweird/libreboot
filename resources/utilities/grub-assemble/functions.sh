@@ -21,7 +21,7 @@
 [ "x${DEBUG+set}" = 'xset' ] && set -v
 set -u -e
 
-# This functions assume that the current directory is coreboot/
+# This functions assume that the current directory is resources/utilities/grub-assemble/
 # inside the git repository of libreboot
 make_grub_config_file () {
 	if (( $# != 2 )); then
