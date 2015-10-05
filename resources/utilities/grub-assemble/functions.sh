@@ -34,7 +34,7 @@ make_grub_config_file () {
 	romtype="${1}"
 	keymap="${2}"
 
-	cat "../resources/grub/config/extra/common.cfg" > "grub_${keymap}_${romtype}.cfg"
+	cat "../resources/grub/config/extra/common.cfg" >> "grub_${keymap}_${romtype}.cfg"
 	cat "../resources/grub/config/extra/${romtype}.cfg" >> "grub_${keymap}_${romtype}.cfg"
 	printf "keymap %s\n" "${keymap}" >> "grub_${keymap}_${romtype}.cfg"
 	cat "../resources/grub/config/menuentries/common.cfg" >> "grub_${keymap}_${romtype}.cfg"
