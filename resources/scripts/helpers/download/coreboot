@@ -134,6 +134,12 @@ printf "chromeos: Allow disabling vboot firmware verification when ChromeOS is e
 git am "../resources/libreboot/patch/misc/0009-chromeos-Allow-disabling-vboot-firmware-verification.patch"
 # git fetch http://review.coreboot.org/coreboot refs/changes/43/11143/2 && git cherry-pick FETCH_HEAD
 
+# GM45 text-mode:
+
+printf "Fix text-mode graphics initialization on GM45 (X200, T400, etc)\n"
+git am "../resources/libreboot/patch/misc/0010-Needs-Testing-VGA-and-GM45-textmode-fixes.patch"
+# git fetch http://review.coreboot.org/coreboot refs/changes/93/12293/1 && git cherry-pick FETCH_HEAD
+
 # KGPE-D16 patches
 # new versions can be found at https://raptorengineeringinc.com/coreboot/kgpe-d16-status.php
 for i in ../resources/libreboot/patch/kgpe-d16/*; do
